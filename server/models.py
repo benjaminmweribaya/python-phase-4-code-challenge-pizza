@@ -19,8 +19,6 @@ class Restaurant(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
     address = db.Column(db.String, nullable=False)
-
-    # Add relationship
     restaurant_pizzas = db.relationship('RestaurantPizza', back_populates='restaurant', cascade='all, delete-orphan')
 
     def to_dict(self, include_pizzas=False):
@@ -78,10 +76,10 @@ class RestaurantPizza(db.Model, SerializerMixin):
     pizza = db.relationship('Pizza', back_populates='restaurant_pizzas')
 
     # Price validation
-    @validates("price")
+    @validates('price')
     def validate_price(self, key, price):
-        if price < 1 or price > 30:
-            raise ValueError("Price must be between 1 and 30.")
+        if not 1 <= price <= 30:
+            raise ValueError("Price must be between 1 and 30")
         return price
 
     def to_dict(self):

@@ -25,21 +25,32 @@ def index():
 # Route to retrieve all restaurants
 @app.route("/restaurants", methods=["GET"])
 def get_restaurants():
-    restaurants = Restaurant.query.all()
+    restaurants = db.session.query(Restaurant).all()
     return jsonify([restaurant.to_dict() for restaurant in restaurants]), 200
 
 # Route to retrieve a single restaurant by ID
 @app.route("/restaurants/<int:id>", methods=["GET"])
-def get_restaurant(id):
-    restaurant = Restaurant.query.get(id)
-    if not restaurant:
-        return jsonify({"error": "Restaurant not found"}), 404
-    return jsonify(restaurant.to_dict()), 200
+def get_restaurant_by_id(id):
+    restaurant = db.session.get(Restaurant, id)
+    if restaurant:
+        return {
+            "id": restaurant.id,
+            "name": restaurant.name,
+            "address": restaurant.address,
+            "restaurant_pizzas": [
+                {
+                    "id": rp.id,
+                    "pizza_id": rp.pizza_id,
+                    "price": rp.price
+                } for rp in restaurant.restaurant_pizzas
+            ]
+        }, 200
+    return {"error": "Restaurant not found"}, 404
 
 # Route to delete a restaurant by ID
 @app.route("/restaurants/<int:id>", methods=["DELETE"])
 def delete_restaurant(id):
-    restaurant = Restaurant.query.get(id)
+    restaurant = db.session.get(Restaurant, id)
     if not restaurant:
         return jsonify({"error": "Restaurant not found"}), 404
     db.session.delete(restaurant)
@@ -63,12 +74,12 @@ def create_restaurant_pizza():
     restaurant_id = data.get("restaurant_id")
 
     # Validate price range
-    if price is None or not (1 <= price <= 30):
-        return jsonify({"errors": ["Price must be between 1 and 30"]}), 400
+    if not 1 <= price <= 30:
+        return jsonify({"errors": ["validation errors"]}), 400
 
     # Ensure pizza and restaurant exist
-    pizza = Pizza.query.get(pizza_id)
-    restaurant = Restaurant.query.get(restaurant_id)
+    pizza = db.session.get(Pizza, pizza_id)
+    restaurant = db.session.get(Restaurant, restaurant_id)
 
     if not pizza or not restaurant:
         return jsonify({"error": "Pizza or Restaurant not found"}), 404
