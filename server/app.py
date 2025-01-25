@@ -14,21 +14,19 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.json.compact = False
 
 migrate = Migrate(app, db)
-
 db.init_app(app)
-
 api = Api(app)
 
 
 @app.route("/")
 def index():
-    return "<h1>Code challenge</h1>"
+    return "<h1>Welcome to the Pizza Code challenge</h1>"
 
 # Route to retrieve all restaurants
 @app.route("/restaurants", methods=["GET"])
 def get_restaurants():
     restaurants = Restaurant.query.all()
-    return jsonify([restaurant.to_dict() for restaurant in restaurants])
+    return jsonify([restaurant.to_dict() for restaurant in restaurants]), 200
 
 # Route to retrieve a single restaurant by ID
 @app.route("/restaurants/<int:id>", methods=["GET"])
@@ -36,7 +34,7 @@ def get_restaurant(id):
     restaurant = Restaurant.query.get(id)
     if not restaurant:
         return jsonify({"error": "Restaurant not found"}), 404
-    return jsonify(restaurant.to_dict())
+    return jsonify(restaurant.to_dict()), 200
 
 # Route to delete a restaurant by ID
 @app.route("/restaurants/<int:id>", methods=["DELETE"])
@@ -52,7 +50,7 @@ def delete_restaurant(id):
 @app.route("/pizzas", methods=["GET"])
 def get_pizzas():
     pizzas = Pizza.query.all()
-    return jsonify([pizza.to_dict() for pizza in pizzas])
+    return jsonify([pizza.to_dict() for pizza in pizzas]), 200
 
 # Route to create a restaurant pizza
 @app.route("/restaurant_pizzas", methods=["POST"])
@@ -65,17 +63,15 @@ def create_restaurant_pizza():
     restaurant_id = data.get("restaurant_id")
 
     # Validate price range
-    if price is None or price < 1 or price > 30:
-        return jsonify({"errors": ["validation errors"]}), 400
+    if price is None or not (1 <= price <= 30):
+        return jsonify({"errors": ["Price must be between 1 and 30"]}), 400
 
     # Ensure pizza and restaurant exist
     pizza = Pizza.query.get(pizza_id)
     restaurant = Restaurant.query.get(restaurant_id)
 
-    if not pizza:
-        return jsonify({"error": "Pizza not found"}), 404
-    if not restaurant:
-        return jsonify({"error": "Restaurant not found"}), 404
+    if not pizza or not restaurant:
+        return jsonify({"error": "Pizza or Restaurant not found"}), 404
 
     # Create and save the restaurant_pizza entry
     restaurant_pizza = RestaurantPizza(
